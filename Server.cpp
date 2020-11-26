@@ -8,6 +8,15 @@
 #include<string.h>
 #include<unistd.h>
 #include<iostream>
+#include<signal.h>
+#include<errno.h>
+#include<dirent.h>
+#include<sys/types.h>
+
+
+#define TIMEOUT_SECS 3
+
+
 using namespace std;
 struct UDP_Packet{              //Packet receiving form the client
     int packet_type;
@@ -21,6 +30,31 @@ struct UDP_ACK_Packet{          //ACK packet
     int ack_no;
 };
 
+void CatchAlarm(int p)
+{
+    //cout<<
+}
+
+struct UDP_Packet creat_data_packet(int sequence_number,int len,char* data)
+{
+    struct UDP_Packet packet;
+    packet.packet_type=1;
+    packet.packet_size=len;
+    packet.sequence_number=sequence_number;
+    memset(packet.buffer,0,sizeof(packet.buffer));
+    strcpy(packet.buffer,data);
+    return packet;
+}
+
+struct UDP_Packet createLastPacketT(int sequence_number,int len)
+{
+    struct UDP_Packet packet;
+    packet.packet_type=4;
+    packet.sequence_number=sequence_number;
+    packet.packet_size=0;
+    memset(packet.buffer,0,sizeof(packet.buffer));
+    return packet;
+}
 int main(int argc,char *argv[]){
     struct sockaddr_in server_address;
     struct sockaddr_in client_address;
@@ -30,10 +64,13 @@ int main(int argc,char *argv[]){
     int message_size;
     int chunk_size;
     float loss_error_percentage;
-
+    struct sigaction signal_handle;       //myAction
     char buffer[10000];     //data buffer
     int sequence_number=0;
     int bss=0;          //base
+    int window_size=5;
+    int receive_string_length;   //respStringLen
+    int tries=0;
 
     if(argc<3 || argc<4)
     {
@@ -64,6 +101,7 @@ int main(int argc,char *argv[]){
         perror("Error in binding");
         exit(1);
     }
+    cout<<"Server started successfully..."<<endl;
     clinet_address_length=sizeof(client_address);
 
     char buffer_msg[1024];
@@ -72,7 +110,142 @@ int main(int argc,char *argv[]){
         perror("No msg received");
         exit(1);
     }
-    cout<<"Message received"<<buffer_msg<<endl;
+    cout<<"Message received "<<buffer_msg<<endl;        //getting messaege from the client to perform request
+    //Here have to check for the type of the message
+    if(strcmp(buffer_msg,"list")==0)
+    {
+        //list part
+        //char *data_generated="Featured articles are considered to be some of the best articles Wikipedia has to offer, as determined by Wikipedia's editors. They are used by editors as examples for writing other articles. Before being listed here, articles are reviewed as featured article candidates for accuracy, neutrality, completeness, and style according to our featured article criteria. There are 5,884 featured articles out of 6,196,135 articles on the English Wikipedia (about 0.1% or one out of every 1,050 articles).";
+        //Calculating segments of message to be sent
+        struct dirent *de;
+        DIR *dr;
+        char list_result[1024];
+        memset(list_result,0,sizeof(list_result));
+        if ((dr = opendir("./")) == NULL)
+        perror("opendir() error");
+        while((de=readdir(dr))!=NULL)
+        {
+            //printf("%s\n",de->d_name);
+            strcat(list_result,de->d_name);
+            strcat(list_result," \n");
+        }
+        // printf("%s",list_result);
+        //printf("%s",fi);
+        char *data_generated=list_result;
+        
+        int total_data_size=strlen(data_generated);
+        int num_of_segments=total_data_size/chunk_size;
+        if(strlen(data_generated)%chunk_size>0)
+            num_of_segments++;
+        
+        int start_base=-1;      //base
+        int start_seqno=0;
+        int start_datalength=0;
+
+        //setting alarm siginal
+        signal_handle.sa_handler=CatchAlarm;
+        if(sigemptyset(&signal_handle.sa_mask)<0)
+        {
+            perror("Failed signal");
+            exit(1);
+        }
+        signal_handle.sa_flags=0;
+
+        if(sigaction(SIGALRM,&signal_handle,0)<0)
+        {
+            perror("sigaction failed for sigalarm");
+            exit(1);
+        }
+        //Boolean to allow ruuning progarm till last ACK received
+        int noLastACK=1;       //noTearDownACK
+        while(noLastACK)
+        {
+            while(start_seqno<=num_of_segments && (start_seqno-start_base)<=window_size)
+            {
+                struct UDP_Packet pacData;
+                if(start_seqno==num_of_segments){       //Handeling terminal situation
+                    pacData=createLastPacketT(start_seqno,0);
+                    cout<<"Sending Last packet "<<endl;
+                }
+                else{
+                    char data_seg[chunk_size];
+                    strncpy(data_seg,(data_generated+start_seqno*chunk_size),chunk_size);
+                    pacData=creat_data_packet(start_seqno,start_datalength,data_seg);
+                    cout<<"Packet Sending"<<start_seqno<<endl;
+                }
+                if(sendto(socke,&pacData,sizeof(pacData),0,(struct sockaddr *)&client_address,sizeof(client_address))!=sizeof(pacData))
+                {
+                    perror("Send to send different number if bytes than expected");
+                    exit(1);
+                }
+                start_seqno++;
+            }
+            //setting timer
+            alarm(TIMEOUT_SECS);       //Must set timout sec here
+            cout<<"Window is full...Waiting for the acknowledgement "<<endl;
+            struct UDP_ACK_Packet ack_k;
+            while((receive_string_length=recvfrom(socke,&ack_k,sizeof(ack_k),0,(struct sockaddr *)&client_address,&clinet_address_length))<0)
+            {
+                if(errno==EINTR)
+                {
+                    start_seqno=start_base+1;
+                    cout<<"TIMEOUT: Starting to resend "<<endl;
+                    if(tries>=15)
+                    {
+                        cout<<"Total tries increased: Closing"<<endl;
+                        exit(1);
+                    }
+                    else
+                    {
+                        alarm(0);
+                        while(start_seqno<=num_of_segments && (start_seqno-start_base)<=window_size){
+                            struct UDP_Packet pacData;
+                            if(start_seqno==num_of_segments)
+                            {
+                                pacData=createLastPacketT(start_seqno,0);
+                                cout<<"Sending Last packet "<<endl;
+                            }
+                            else{
+                                char data_seg[chunk_size];
+                                strncpy(data_seg,(data_generated+start_seqno*chunk_size),chunk_size);
+                                pacData=creat_data_packet(start_seqno,start_datalength,data_seg);
+                                cout<<"Packet Sending "<<start_seqno<<endl;
+                            }
+                            if(sendto(socke,&pacData,sizeof(pacData),0,(struct sockaddr *)&client_address,sizeof(client_address))!=sizeof(pacData))
+                            {
+                                perror("Send to send different number if bytes than expected ");
+                                exit(1);
+                            }
+                            start_seqno++;
+                        }
+                        alarm(TIMEOUT_SECS);
+                    }
+                    tries++;
+                }
+                else
+                {
+                    perror("recfrom() failed");
+                    exit(1);
+                }
+            }
+            if(ack_k.packet_type!=8)
+            {
+                cout<<"********* ACK RECEIVED: "<<ack_k.ack_no<<endl;
+                if(ack_k.ack_no>start_base){
+                    start_base=ack_k.ack_no;
+                }
+            }
+            else{
+                cout<<"Last ACK received"<<endl;
+                noLastACK=0;
+            }
+            alarm(0);
+            tries=0;
+        }
+        close(socke);
+        exit(0);
+
+    }
     return 0;
 }
 
