@@ -130,7 +130,9 @@ int main(int argc,char *argv[]){
             {
                 //printf("%s\n",de->d_name);
                 strcat(list_result,de->d_name);
-                strcat(list_result," ");
+                cout<<list_result<<endl;;
+                //list_result[strlen(list_result)]='\n';
+                strcat(list_result,"\n");
             }
             // printf("%s",list_result);
             //printf("%s",fi);
@@ -175,6 +177,7 @@ int main(int argc,char *argv[]){
                         char data_seg[chunk_size];
                         strncpy(data_seg,(data_generated+start_seqno*chunk_size),chunk_size);
                         pacData=creat_data_packet(start_seqno,start_datalength,data_seg);
+                        cout<<"Debug"<<pacData.buffer<<endl;
                         cout<<"Packet Sending"<<start_seqno<<endl;
                     }
                     if(sendto(socke,&pacData,sizeof(pacData),0,(struct sockaddr *)&client_address,sizeof(client_address))!=sizeof(pacData))

@@ -137,7 +137,12 @@ int main(int argc,char *argv[])
                     if(packet_data.sequence_number==0 && packet_data.packet_type==1)
                     {
                         cout<<"Received Initial packet "<<inet_ntoa(server_address_from.sin_addr)<<endl;
+                        //cout<<"Debug-0:"<<buff<<endl;
+                        packet_data.buffer[chunk_size]='~';
+                        packet_data.buffer[chunk_size+1]='~';
+                        cout<<"Debug:  "<<packet_data.buffer<<endl;
                         memset(buff,0,sizeof(buff));
+                       // cout<<"Debug-1:"<<buff<<endl;
                         strcpy(buff,packet_data.buffer);
                         start_base=0;
                         ack_k=ACK_createpacket(2,start_base);
@@ -146,6 +151,9 @@ int main(int argc,char *argv[])
                     {
                         cout<<"Received: Sequence No "<<packet_data.sequence_number;
                        // cout<<endl<<<<"Debug:"<<packet_data.buffer<<endl;
+                        packet_data.buffer[chunk_size]='~';
+                        packet_data.buffer[chunk_size+1]='~';
+                        cout<<"Debug:  "<<packet_data.buffer<<endl;
                         strcat(buff,packet_data.buffer);
                         start_base=packet_data.sequence_number;
                         ack_k=ACK_createpacket(2,start_base);
@@ -180,7 +188,18 @@ int main(int argc,char *argv[])
                     }
 
                     if(packet_data.packet_type==4 && start_base==-1){
-                        cout<<"Message received: "<<buff<<endl;
+                        char temp_storage[8192];
+                        int x=0;
+                        for(int i=0;i<strlen(buff);i++)
+                        {
+                            if(buff[i]!='~')
+                            {
+                                temp_storage[x]=buff[i];
+                                x++;
+                            }
+                        }
+                        temp_storage[x]='\0';
+                        cout<<"Message received: "<<temp_storage<<endl;
                         memset(buff,0,sizeof(buff));
                         break;
                     }
