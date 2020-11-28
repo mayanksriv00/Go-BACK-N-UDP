@@ -177,7 +177,7 @@ int main(int argc,char *argv[]){
                         char data_seg[chunk_size];
                         strncpy(data_seg,(data_generated+start_seqno*chunk_size),chunk_size);
                         pacData=creat_data_packet(start_seqno,start_datalength,data_seg);
-                        cout<<"Debug"<<pacData.buffer<<endl;
+                        //cout<<"Debug"<<pacData.buffer<<endl;
                         cout<<"Packet Sending"<<start_seqno<<endl;
                     }
                     if(sendto(socke,&pacData,sizeof(pacData),0,(struct sockaddr *)&client_address,sizeof(client_address))!=sizeof(pacData))

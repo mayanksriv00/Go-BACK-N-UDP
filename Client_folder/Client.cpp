@@ -7,6 +7,7 @@
 #include<errno.h>
 #include<signal.h>
 #include<iostream>
+#include<fstream>
 using namespace std;
 
 #define STRINGSIZE 511      //longest string to echo
@@ -153,7 +154,7 @@ int main(int argc,char *argv[])
                        // cout<<endl<<<<"Debug:"<<packet_data.buffer<<endl;
                         packet_data.buffer[chunk_size]='~';
                         packet_data.buffer[chunk_size+1]='~';
-                        cout<<"Debug:  "<<packet_data.buffer<<endl;
+                        //cout<<"Debug:  "<<packet_data.buffer<<endl;
                         strcat(buff,packet_data.buffer);
                         start_base=packet_data.sequence_number;
                         ack_k=ACK_createpacket(2,start_base);
@@ -232,8 +233,8 @@ int main(int argc,char *argv[])
             char buff[50000];
             int start_base=-2;
             int sequence_number=0;
-            FILE *fp;
-            fp = fopen(str3, "wb");
+            //FILE *fp;
+            //fp = fopen(str3, "w");
             for(;;)
             {
                 size_from=sizeof(server_address_from);
@@ -251,6 +252,8 @@ int main(int argc,char *argv[])
                     {
                         cout<<"Received Initial packet "<<inet_ntoa(server_address_from.sin_addr)<<endl;
                         memset(buff,0,sizeof(buff));
+                        packet_data.buffer[chunk_size]='~';
+                        packet_data.buffer[chunk_size+1]='~';
                         strcpy(buff,packet_data.buffer);
                         start_base=0;
                         ack_k=ACK_createpacket(2,start_base);
@@ -259,6 +262,8 @@ int main(int argc,char *argv[])
                     {
                         cout<<"Received: Sequence No "<<packet_data.sequence_number;
                        // cout<<endl<<<<"Debug:"<<packet_data.buffer<<endl;
+                        packet_data.buffer[chunk_size]='~';
+                        packet_data.buffer[chunk_size+1]='~';
                         strcat(buff,packet_data.buffer);
                         start_base=packet_data.sequence_number;
                         ack_k=ACK_createpacket(2,start_base);
@@ -295,8 +300,47 @@ int main(int argc,char *argv[])
                     if(packet_data.packet_type==4 && start_base==-1){
                         cout<<"Message received: "<<buff<<endl;
                         cout<<"File Received"<<endl;
-                        cout<<"mayank";
-                        fputs(buff, fp);
+                        char temp_storage[8192];
+                        int x=0;
+                        for(int i=0;i<strlen(buff);i++)
+                        {
+                            if(buff[i]!='~')
+                            {
+                                temp_storage[x]=buff[i];
+                                x++;
+                            }
+                        }
+                        temp_storage[x]='\0';
+                        cout<<"Message received: "<<temp_storage<<endl;
+                       /* cout<<"Debug length"<<strlen(temp_storage)<<endl;
+                        for(int i=0;i<strlen(temp_storage);i++)
+                        {
+                            if(temp_storage[i]!='~')
+                            {
+                                cout<<" "<<temp_storage[i];
+                                cout<<fp<<endl;
+                                fputc(temp_storage[i],fp);
+                                //fseek(fp, 1, SEEK_SET);
+                            }
+                        }
+                        //fputs(temp_storage, fp);*/
+                        x=0;
+                        ofstream fp(str3);
+                        if(fp.is_open())
+                        {
+                            for(int i=0;i<strlen(temp_storage);i++)
+                            {
+                                if(temp_storage[i]!='~')
+                                {
+                                    //cout<<" "<<temp_storage[i];
+                                    //cout<<fp<<endl;
+                                    fp<<temp_storage[x];
+                                    x++;
+                                    //fseek(fp, 1, SEEK_SET);
+                                }
+                            }
+                           fp.close();
+                        }
                         memset(buff,0,sizeof(buff));
                         break;
                     }
@@ -306,7 +350,7 @@ int main(int argc,char *argv[])
                     cout<<"STIUM lose"<<endl;
                 }
             }
-            fclose(fp);
+            //fclose(fp);
 
         }
         if(choice==3)
