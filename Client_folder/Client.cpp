@@ -57,7 +57,7 @@ int main(int argc,char *argv[])
 {
     int socke;
     struct sockaddr_in receiving_server_address;
-    struct sockaddr_in server_address_from; //fromADDR
+    struct sockaddr_in server_address_from; 
     unsigned short receiving_server_port;
     unsigned int size_from;
     struct sigaction signal_handle;
@@ -207,7 +207,7 @@ int main(int argc,char *argv[])
                 }
                 else
                 {
-                    cout<<"STIUM lose"<<endl;
+                    cout<<"lose: SIMULATED"<<endl;
                 }
             }
         }
@@ -230,6 +230,28 @@ int main(int argc,char *argv[])
             msg1=str3;
             sendto(socke,(const char*)msg1,strlen(msg1),MSG_CONFIRM,(const struct sockaddr *)&receiving_server_address,sizeof(receiving_server_address));
             //cout<<"NOw begin"<<endl;
+            memset(buf4,0,sizeof(buf4));
+            //n=recvfrom(socke,(char *)buf4,1024,MSG_WAITALL,(struct sockaddr *)&receiving_server_address,&len3);
+            while((recvfrom(socke,(char *)buf4,1024,MSG_WAITALL,(struct sockaddr *)&receiving_server_address,&len3))>0)
+            {
+                cout<<"DEBUG"<<buf4<<endl;
+                if(strcmp(buf4,"RECEIVED")!=0)
+                {
+                    cout<<"DEBUG: Inside iii"<<endl;
+                    cout<<"Enter correct file name"<<endl;
+                    scanf("%s",str3);
+                    //memset(str3,0,sizeof(str3));
+                    char *msg1="";
+                    msg1=str3;
+                    cout<<"CHECK"<<msg1<<endl;
+                    sendto(socke,(const char*)msg1,strlen(msg1),MSG_CONFIRM,(const struct sockaddr *)&receiving_server_address,sizeof(receiving_server_address));
+                    memset(buf4,0,sizeof(buf4));
+                }
+                else
+                {
+                    break;
+                }
+            }
             char buff[50000];
             int start_base=-2;
             int sequence_number=0;
@@ -312,18 +334,6 @@ int main(int argc,char *argv[])
                         }
                         temp_storage[x]='\0';
                         cout<<"Message received: "<<temp_storage<<endl;
-                       /* cout<<"Debug length"<<strlen(temp_storage)<<endl;
-                        for(int i=0;i<strlen(temp_storage);i++)
-                        {
-                            if(temp_storage[i]!='~')
-                            {
-                                cout<<" "<<temp_storage[i];
-                                cout<<fp<<endl;
-                                fputc(temp_storage[i],fp);
-                                //fseek(fp, 1, SEEK_SET);
-                            }
-                        }
-                        //fputs(temp_storage, fp);*/
                         x=0;
                         ofstream fp(str3);
                         if(fp.is_open())
@@ -332,11 +342,8 @@ int main(int argc,char *argv[])
                             {
                                 if(temp_storage[i]!='~')
                                 {
-                                    //cout<<" "<<temp_storage[i];
-                                    //cout<<fp<<endl;
                                     fp<<temp_storage[x];
                                     x++;
-                                    //fseek(fp, 1, SEEK_SET);
                                 }
                             }
                            fp.close();
@@ -347,7 +354,7 @@ int main(int argc,char *argv[])
                 }
                 else
                 {
-                    cout<<"STIUM lose"<<endl;
+                    cout<<"lose: SIMULATED"<<endl;
                 }
             }
             //fclose(fp);
@@ -355,6 +362,7 @@ int main(int argc,char *argv[])
         }
         if(choice==3)
         {
+            cout<<"Client exit successfully"<<endl;
             exit(0);
         }
 

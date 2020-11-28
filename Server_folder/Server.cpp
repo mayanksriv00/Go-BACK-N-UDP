@@ -64,22 +64,22 @@ int main(int argc,char *argv[]){
     int message_size;
     int chunk_size;
     float loss_error_percentage;
-    struct sigaction signal_handle;       //myAction
-    char buffer[10000];     //data buffer
+    struct sigaction signal_handle;       
+    char buffer[10000];     
     int sequence_number=0;
     int bss=0;          //base
     int window_size=5;
-    int receive_string_length;   //respStringLen
+    int receive_string_length;   
     int tries=0;
 
-    if(argc<3 || argc<4)
+    if(argc<3)
     {
-        perror("Follow the format [ ./filename <Port_NO[UDP]> <Chunk_size> <Loss_Error_percentage>");
+        perror("Follow the format [ ./filename <Port_NO[UDP]> <Chunk_size>");
         exit(1);
     }
     server_port_no=atoi(argv[1]);
     chunk_size=atoi(argv[2]);
-    loss_error_percentage=(atof(argv[3]))/100.0;
+    //loss_error_percentage=(atof(argv[3]))/100.0;
 
     //cout<<server_port_no<<endl;
     //cout<<chunk_size<<endl;
@@ -111,6 +111,7 @@ int main(int argc,char *argv[]){
         if((message_size=recvfrom(socke,(char *)buffer_msg,1024,MSG_WAITALL,(struct sockaddr *)&client_address,&clinet_address_length))<0)
         {
             perror("No msg received");
+            perror("TRY again restarting serve and client");
             exit(1);
         }
         cout<<"Message received "<<buffer_msg<<endl;        //getting messaege from the client to perform request
@@ -256,6 +257,7 @@ int main(int argc,char *argv[]){
         if(strcmp(buffer_msg,"get")==0)
         {   cout<<"Inside file get command"<<endl;
             char *f_msg="Plese send the file name to fetch\n";
+            char *f_msg11="RECEIVED";
             if(sendto(socke,(const char *)f_msg,sizeof(f_msg),0,(struct sockaddr *)&client_address,sizeof(client_address))<0)
             {
                 perror("SendTo failed at server side");
@@ -265,19 +267,45 @@ int main(int argc,char *argv[]){
             memset(buffer_msg,0,sizeof(buffer_msg));
             if((message_size=recvfrom(socke,(char *)buffer_msg1,1024,MSG_WAITALL,(struct sockaddr *)&client_address,&clinet_address_length))<0)
             {
-                perror("No msg received");
+                perror("No msg received: waiting...");
                 exit(1);
             }
             cout<<buffer_msg1<<endl;
             //Getting file name from the client, now open file and perform the oeration 
-            FILE *fptr;
+            FILE *fptr=NULL;
             char c;
-            fptr = fopen(buffer_msg1, "r"); 
+            //fptr = fopen(buffer_msg1, "r"); 
             if(fptr==NULL)
             {
-                cout<<"File name not present"<<endl;
-                cout<<"Try again..restart the program"<<endl;
-                exit(0);
+                //cout<<"File name not present"<<endl;
+                while(fptr==NULL)
+                {
+                    fptr = fopen(buffer_msg1, "r"); 
+                    if(fptr==NULL)
+                    {
+                        cout<<"File name not present"<<endl;
+                        char *er="ERROR";
+                        memset(buffer_msg1,0,sizeof(buffer_msg1));
+                        if(sendto(socke,(const char *)er,sizeof(er),0,(struct sockaddr *)&client_address,sizeof(client_address))<0)
+                        {
+                            perror("SendTo failed at server side");
+                            exit(1);
+                        }
+                        if((message_size=recvfrom(socke,(char *)buffer_msg1,1024,MSG_WAITALL,(struct sockaddr *)&client_address,&clinet_address_length))<0)
+                        {
+                            perror("No msg received: waiting...");
+                            exit(1);
+                        }
+                        cout<<"DEBUG"<<buffer_msg1<<endl;
+                    }
+                    
+                }
+                //exit(0);
+            }
+            if(sendto(socke,(const char *)f_msg11,sizeof(f_msg11),0,(struct sockaddr *)&client_address,sizeof(client_address))<0)
+            {
+                perror("SendTo failed at server side");
+                exit(1);
             }
             c=fgetc(fptr);
             char str_f[50000];
@@ -407,8 +435,9 @@ int main(int argc,char *argv[]){
             //close(socke);
 
         }
-        if(strcmp(buffer_msg,"exit")==0)
+        if(strcmp(buffer_msg,"exit server")==0)
         {
+            //not possible logically used CTR+C to exit the program
             close(socke);
             exit(0);
             break;
