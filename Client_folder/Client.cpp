@@ -20,7 +20,7 @@ struct UDP_Packet{              //Packet receiving form the client
     int packet_type;
     int sequence_number;
     int packet_size;
-    char buffer[512];
+    char buffer[1024];
 };
 
 struct UDP_ACK_Packet{          //ACK packet
@@ -113,7 +113,7 @@ int main(int argc,char *argv[])
             //sending the list message to the server
             char *msg="list";
             sendto(socke,(const char*)msg,strlen(msg),MSG_CONFIRM,(const struct sockaddr *)&receiving_server_address,sizeof(receiving_server_address));
-            cout<<"Sending list to server "<<endl;
+            cout<<"Sending list command to server "<<endl;
 
             //Now client has to receive msg from the server
             //Response of the list command that was execited at the server side
@@ -145,6 +145,7 @@ int main(int argc,char *argv[])
                     else if(packet_data.sequence_number==start_base+1)
                     {
                         cout<<"Received: Sequence No "<<packet_data.sequence_number;
+                       // cout<<endl<<<<"Debug:"<<packet_data.buffer<<endl;
                         strcat(buff,packet_data.buffer);
                         start_base=packet_data.sequence_number;
                         ack_k=ACK_createpacket(2,start_base);
@@ -189,6 +190,105 @@ int main(int argc,char *argv[])
                     cout<<"STIUM lose"<<endl;
                 }
             }
+        }
+        if(choice==2)
+        {
+            char *msg="get";
+            sendto(socke,(const char*)msg,strlen(msg),MSG_CONFIRM,(const struct sockaddr *)&receiving_server_address,sizeof(receiving_server_address));
+            cout<<"Sending get command to server "<<endl;
+            char buf4[1024];
+            unsigned int len3;
+            int n;
+            n=recvfrom(socke,(char *)buf4,1024,MSG_WAITALL,(struct sockaddr *)&receiving_server_address,&len3);
+            //printf("%s\n",buf4);
+            cout<<"Enter the file name you want(get) from the server"<<endl;
+            char *msg1="";
+            char str3[1024];
+            memset(str3,0,sizeof(str3));
+            scanf("%s",str3);
+            //printf("%s",str3);
+            msg1=str3;
+            sendto(socke,(const char*)msg1,strlen(msg1),MSG_CONFIRM,(const struct sockaddr *)&receiving_server_address,sizeof(receiving_server_address));
+            //cout<<"NOw begin"<<endl;
+            char buff[50000];
+            int start_base=-2;
+            int sequence_number=0;
+            FILE *fp;
+            fp = fopen(str3, "wb");
+            for(;;)
+            {
+                size_from=sizeof(server_address_from);
+                struct UDP_Packet packet_data;
+                struct UDP_ACK_Packet ack_k;
+                if((receive_size=recvfrom(socke,&packet_data,sizeof(packet_data),0,(struct sockaddr *)&server_address_from,&size_from))<0)
+                {
+                    perror("recvfrom() error");
+                    exit(1);
+                }
+                sequence_number=packet_data.sequence_number;
+                if(!packet_loss(loss_error_percentage))
+                {
+                    if(packet_data.sequence_number==0 && packet_data.packet_type==1)
+                    {
+                        cout<<"Received Initial packet "<<inet_ntoa(server_address_from.sin_addr)<<endl;
+                        memset(buff,0,sizeof(buff));
+                        strcpy(buff,packet_data.buffer);
+                        start_base=0;
+                        ack_k=ACK_createpacket(2,start_base);
+                    }
+                    else if(packet_data.sequence_number==start_base+1)
+                    {
+                        cout<<"Received: Sequence No "<<packet_data.sequence_number;
+                       // cout<<endl<<<<"Debug:"<<packet_data.buffer<<endl;
+                        strcat(buff,packet_data.buffer);
+                        start_base=packet_data.sequence_number;
+                        ack_k=ACK_createpacket(2,start_base);
+                    }
+                    else if(packet_data.packet_type==1 && packet_data.sequence_number!=start_base+1)
+                    {
+                        cout<<"OUT OF SEQ: Packet received "<<packet_data.sequence_number<<endl;
+                        ack_k=ACK_createpacket(2,start_base);
+                    }
+                    if(packet_data.packet_type==4 && sequence_number==start_base)
+                    {
+                        start_base=-1;
+                        ack_k=ACK_createpacket(8,start_base);
+                    }
+                    if(start_base>=0)
+                    {
+                        cout<<"SENDING acknowledgement "<<start_base<<endl;
+                        if(sendto(socke,&ack_k,sizeof(ack_k),0,(struct sockaddr *)&server_address_from,sizeof(server_address_from))!=sizeof(ack_k))
+                        {
+                            perror("sending bits different from expected - 1");
+                            exit(1);
+                        }
+                    }
+                    else if(start_base==-1){
+                        cout<<"Recived LAST packet"<<endl;
+                        cout<<"Sending last ACK"<<endl;
+                        if(sendto(socke,&ack_k,sizeof(ack_k),0,(struct sockaddr *)&server_address_from,sizeof(server_address_from))!=sizeof(ack_k))
+                        {
+                            perror("sending bits different from expected - 2");
+                            exit(1);
+                        }
+                    }
+
+                    if(packet_data.packet_type==4 && start_base==-1){
+                        cout<<"Message received: "<<buff<<endl;
+                        cout<<"File Received"<<endl;
+                        cout<<"mayank";
+                        fputs(buff, fp);
+                        memset(buff,0,sizeof(buff));
+                        break;
+                    }
+                }
+                else
+                {
+                    cout<<"STIUM lose"<<endl;
+                }
+            }
+            fclose(fp);
+
         }
         if(choice==3)
         {
