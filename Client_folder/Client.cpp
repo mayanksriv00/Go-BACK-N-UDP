@@ -141,7 +141,7 @@ int main(int argc,char *argv[])
                         //cout<<"Debug-0:"<<buff<<endl;
                         packet_data.buffer[chunk_size]='~';
                         packet_data.buffer[chunk_size+1]='~';
-                        cout<<"Debug:  "<<packet_data.buffer<<endl;
+                        //cout<<"Debug:  "<<packet_data.buffer<<endl;
                         memset(buff,0,sizeof(buff));
                        // cout<<"Debug-1:"<<buff<<endl;
                         strcpy(buff,packet_data.buffer);
@@ -234,10 +234,10 @@ int main(int argc,char *argv[])
             //n=recvfrom(socke,(char *)buf4,1024,MSG_WAITALL,(struct sockaddr *)&receiving_server_address,&len3);
             while((recvfrom(socke,(char *)buf4,1024,MSG_WAITALL,(struct sockaddr *)&receiving_server_address,&len3))>0)
             {
-                cout<<"DEBUG"<<buf4<<endl;
+                //cout<<"DEBUG"<<buf4<<endl;
                 if(strcmp(buf4,"RECEIVED")!=0)
                 {
-                    cout<<"DEBUG: Inside iii"<<endl;
+                   // cout<<"DEBUG: Inside iii"<<endl;
                     cout<<"Enter correct file name"<<endl;
                     scanf("%s",str3);
                     //memset(str3,0,sizeof(str3));

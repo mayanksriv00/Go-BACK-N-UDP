@@ -296,7 +296,7 @@ int main(int argc,char *argv[]){
                             perror("No msg received: waiting...");
                             exit(1);
                         }
-                        cout<<"DEBUG"<<buffer_msg1<<endl;
+                       // cout<<"DEBUG"<<buffer_msg1<<endl;
                     }
                     
                 }
