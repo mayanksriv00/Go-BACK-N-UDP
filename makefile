@@ -1,6 +1,6 @@
 #Makefile to run program
-#./Server 2734 12
-#./Client 127.0.0.1 2734 12 10
+#./Server 2734 1024
+#./Client 127.0.0.1 2734 1024 1
 
 all: Server Client
 
@@ -15,4 +15,6 @@ clean:
 	rm -f Client_folder/*.o
 	rm -f Server_folder/Server
 	rm -f Client_folder/Client
+	
+
 
