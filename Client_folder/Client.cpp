@@ -21,7 +21,7 @@ struct UDP_Packet{              //Packet receiving form the client
     int packet_type;
     int sequence_number;
     int packet_size;
-    char buffer[1024];
+    char buffer[2048];
 };
 
 struct UDP_ACK_Packet{          //ACK packet
@@ -252,7 +252,7 @@ int main(int argc,char *argv[])
                     break;
                 }
             }
-            char buff[50000];
+            char buff[5000000];
             int start_base=-2;
             int sequence_number=0;
             //FILE *fp;
@@ -292,7 +292,7 @@ int main(int argc,char *argv[])
                     }
                     else if(packet_data.packet_type==1 && packet_data.sequence_number!=start_base+1)
                     {
-                        cout<<"OUT OF SEQ: Packet received "<<packet_data.sequence_number<<endl;
+                        cout<<" OUT OF SEQ: Packet received "<<packet_data.sequence_number<<endl;
                         ack_k=ACK_createpacket(2,start_base);
                     }
                     if(packet_data.packet_type==4 && sequence_number==start_base)
@@ -302,7 +302,7 @@ int main(int argc,char *argv[])
                     }
                     if(start_base>=0)
                     {
-                        cout<<"SENDING acknowledgement "<<start_base<<endl;
+                        cout<<" SENDING acknowledgement "<<start_base<<endl;
                         if(sendto(socke,&ack_k,sizeof(ack_k),0,(struct sockaddr *)&server_address_from,sizeof(server_address_from))!=sizeof(ack_k))
                         {
                             perror("sending bits different from expected - 1");
@@ -320,8 +320,8 @@ int main(int argc,char *argv[])
                     }
 
                     if(packet_data.packet_type==4 && start_base==-1){
-                        cout<<"Message received: "<<buff<<endl;
-                        cout<<"File Received"<<endl;
+                        //cout<<"Message received: "<<buff<<endl;
+                        cout<<"File Received: Check your folder file is stored at Client_folder location"<<endl;
                         char temp_storage[8192];
                         int x=0;
                         for(int i=0;i<strlen(buff);i++)
@@ -333,7 +333,7 @@ int main(int argc,char *argv[])
                             }
                         }
                         temp_storage[x]='\0';
-                        cout<<"Message received: "<<temp_storage<<endl;
+                        //cout<<"Message received: "<<temp_storage<<endl;
                         x=0;
                         ofstream fp(str3);
                         if(fp.is_open())

@@ -22,7 +22,7 @@ struct UDP_Packet{              //Packet receiving form the client
     int packet_type;
     int sequence_number;
     int packet_size;
-    char buffer[512];
+    char buffer[2048];
 };
 
 struct UDP_ACK_Packet{          //ACK packet
@@ -131,7 +131,7 @@ int main(int argc,char *argv[]){
             {
                 //printf("%s\n",de->d_name);
                 strcat(list_result,de->d_name);
-                cout<<list_result<<endl;;
+               // cout<<list_result<<endl;;
                 //list_result[strlen(list_result)]='\n';
                 strcat(list_result,"\n");
             }
@@ -270,7 +270,7 @@ int main(int argc,char *argv[]){
                 perror("No msg received: waiting...");
                 exit(1);
             }
-            cout<<buffer_msg1<<endl;
+            //cout<<buffer_msg1<<endl;
             //Getting file name from the client, now open file and perform the oeration 
             FILE *fptr=NULL;
             char c;
@@ -308,11 +308,11 @@ int main(int argc,char *argv[]){
                 exit(1);
             }
             c=fgetc(fptr);
-            char str_f[50000];
+            char str_f[5000000];
             int x=0;
             while (c != EOF) 
             { 
-                printf ("%c", c); 
+                //printf ("%c", c); 
                 str_f[x]=c;
                 x++;
                 c = fgetc(fptr); 
