@@ -119,7 +119,6 @@ int main(int argc,char *argv[]){
         if(strcmp(buffer_msg,"list")==0)
         {
             //list part
-            //char *data_generated="Featured articles are considered to be some of the best articles Wikipedia has to offer, as determined by Wikipedia's editors. They are used by editors as examples for writing other articles. Before being listed here, articles are reviewed as featured article candidates for accuracy, neutrality, completeness, and style according to our featured article criteria. There are 5,884 featured articles out of 6,196,135 articles on the English Wikipedia (about 0.1% or one out of every 1,050 articles).";
             //Calculating segments of message to be sent
             struct dirent *de;
             DIR *dr;
